@@ -4,6 +4,7 @@ import type { LoginRequisicao } from '../../../lib/types/LoginRequisicao.ts';
 import { UsuarioModel } from '../../../lib/models/UsuarioModel';
 import { conectarMongoDB } from '../../../lib/middlewares/conectarMongoDB';
 import md5 from 'md5';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nc from 'next-connect';
 import { politicaCORS } from '../../../lib/middlewares/politicaCORS';
@@ -27,17 +28,48 @@ const handler = nc()
         return res.status(400).json({ erro: 'Senha inválida' });
       }
 
-      // Normaliza o email para evitar problemas de maiúsculas/minúsculas
+      // Normaliza email
       const emailNormalizado = usuario.email.toLowerCase().trim();
 
-      // Buscar usuário no MongoDB usando email normalizado
+      // Buscar usuário no MongoDB
       const usuarioExistente = await UsuarioModel.findOne({ email: emailNormalizado });
       if (!usuarioExistente) {
         return res.status(400).json({ erro: 'Email ou senha incorretos' });
       }
 
-      // Verificar senha (usando md5, conforme o padrão atual do projeto)
-      if (usuarioExistente.senha !== md5(usuario.senha)) {
+      // Se o usuário é apenas Google (sem senha definida)
+      if (!usuarioExistente.senha) {
+        return res.status(400).json({ erro: 'Esta conta só pode ser acessada via login com Google' });
+      }
+
+      const hashArmazenado = usuarioExistente.senha;
+
+      let senhaCorreta = false;
+
+      // Verifica se o hash atual é bcrypt (começa com $2a$, $2b$ ou $2y$)
+      const ehBcrypt =
+        hashArmazenado.startsWith('$2a$') ||
+        hashArmazenado.startsWith('$2b$') ||
+        hashArmazenado.startsWith('$2y$');
+
+      if (ehBcrypt) {
+        // Validação padrão com bcrypt
+        senhaCorreta = await bcrypt.compare(usuario.senha, hashArmazenado);
+      } else {
+        // Hash antigo em MD5
+        if (hashArmazenado === md5(usuario.senha)) {
+          senhaCorreta = true;
+
+          // Migração automática: troca MD5 por bcrypt
+          const novoHashBcrypt = await bcrypt.hash(usuario.senha, 10);
+          usuarioExistente.senha = novoHashBcrypt;
+          await usuarioExistente.save();
+        } else {
+          senhaCorreta = false;
+        }
+      }
+
+      if (!senhaCorreta) {
         return res.status(400).json({ erro: 'Email ou senha incorretos' });
       }
 
