@@ -27,13 +27,16 @@ const handler = nc()
         return res.status(400).json({ erro: 'Senha inválida' });
       }
 
-      // Buscar usuário no MongoDB
-      const usuarioExistente = await UsuarioModel.findOne({ email: usuario.email });
+      // Normaliza o email para evitar problemas de maiúsculas/minúsculas
+      const emailNormalizado = usuario.email.toLowerCase().trim();
+
+      // Buscar usuário no MongoDB usando email normalizado
+      const usuarioExistente = await UsuarioModel.findOne({ email: emailNormalizado });
       if (!usuarioExistente) {
         return res.status(400).json({ erro: 'Email ou senha incorretos' });
       }
 
-      // Verificar senha (usando md5, conforme o padrão do projeto)
+      // Verificar senha (usando md5, conforme o padrão atual do projeto)
       if (usuarioExistente.senha !== md5(usuario.senha)) {
         return res.status(400).json({ erro: 'Email ou senha incorretos' });
       }

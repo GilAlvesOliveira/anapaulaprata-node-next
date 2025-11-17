@@ -3,7 +3,7 @@ import type { RespostaPadraoMsg } from '../../../lib/types/RespostaPadraoMsg';
 import type { CadastroRequisicao } from '../../../lib/types/CadastroRequisicao';
 import { UsuarioModel } from '../../../lib/models/UsuarioModel';
 import { conectarMongoDB } from '../../../lib/middlewares/conectarMongoDB';
-import md5 from 'md5'; // Recomendação: Troque por bcrypt para segurança (npm install bcrypt @types/bcrypt)
+import md5 from 'md5';
 import { upload, uploadImagemCosmic } from '../../../lib/services/uploadImagemCosmic';
 import nc from 'next-connect';
 import { politicaCORS } from '../../../lib/middlewares/politicaCORS';
@@ -31,7 +31,11 @@ const handler = nc()
         return res.status(400).json({ erro: 'Senha invalida' });
       }
 
-      const usuarioComMesmoEmail = await UsuarioModel.find({ email: usuario.email });
+      // Normaliza o email para minúsculas e remove espaços extras
+      const emailNormalizado = usuario.email.toLowerCase().trim();
+
+      // Verifica se já existe usuário com o mesmo email (normalizado)
+      const usuarioComMesmoEmail = await UsuarioModel.find({ email: emailNormalizado });
       if (usuarioComMesmoEmail && usuarioComMesmoEmail.length > 0) {
         return res.status(400).json({ erro: 'Ja existe uma conta com o email informado' });
       }
@@ -41,8 +45,8 @@ const handler = nc()
 
       const usuarioASerSalvo = {
         nome: usuario.nome,
-        email: usuario.email,
-        senha: md5(usuario.senha), // Troque por await bcrypt.hash(usuario.senha, 10) para segurança
+        email: emailNormalizado,
+        senha: md5(usuario.senha), // Futuro: trocar por bcrypt.hash(usuario.senha, 10)
         avatar: image?.media?.url,
         role: 'customer', // Para e-commerce
       };

@@ -13,7 +13,14 @@ export interface IUsuario extends Document {
 
 const UsuarioSchema = new Schema<IUsuario>({
   nome: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+  },
+
   senha: { type: String, required: false },
   avatar: { type: String },
   role: { type: String, enum: ['admin', 'customer'], default: 'customer' },
