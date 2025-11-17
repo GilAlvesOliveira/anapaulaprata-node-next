@@ -1,8 +1,11 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+
+// imports relativos ao seu projeto
+import { connectToDatabase } from '../../../lib/mongoose';
+import { UsuarioModel } from '../../../lib/models/UsuarioModel';
 
 export const authOptions: NextAuthOptions = {
-  // Aqui configuramos os provedores de login (Google, GitHub, etc.)
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -10,35 +13,48 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  // Tipo de sessão: JWT (padrão)
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
 
-  // Callbacks: permitem customizar o token e a sessão
   callbacks: {
-    // Esse callback roda toda vez que o token JWT é criado/atualizado
     async jwt({ token, account, profile }) {
-      // Quando o usuário loga pela primeira vez com Google
       if (account && profile) {
-        token.email = profile.email;
-        token.name = profile.name;
-        // picture não vem tipado no profile, então usamos "as any"
-        token.picture = (profile as any).picture;
+        await connectToDatabase();
+
+        const email = profile.email as string | undefined;
+        if (!email) return token;
+
+        let usuario = await UsuarioModel.findOne({ email });
+
+        if (!usuario) {
+          usuario = await UsuarioModel.create({
+            nome: profile.name || 'Usuário',
+            email,
+            avatar: (profile as any).picture,
+            role: 'customer',
+          });
+        }
+
+        token.id = usuario._id.toString();
+        token.email = usuario.email;
+        token.name = usuario.nome;
+        token.picture = usuario.avatar;
+        (token as any).role = usuario.role;
       }
+
       return token;
     },
 
-    // Esse callback define o que vai para "session" no front
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user = {
-          ...session.user,
-          email: token.email as string,
-          name: token.name as string,
-          image: token.picture as string,
-        };
+      if (session.user && token) {
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
+        session.user.image = token.picture as string;
+        (session.user as any).role = (token as any).role;
       }
+
       return session;
     },
   },
