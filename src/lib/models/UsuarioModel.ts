@@ -9,6 +9,8 @@ export interface IUsuario extends Document {
   telefone?: string;
   endereco?: string;
   cep?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 }
 
 const UsuarioSchema = new Schema<IUsuario>({
@@ -27,6 +29,8 @@ const UsuarioSchema = new Schema<IUsuario>({
   telefone: { type: String },
   endereco: { type: String },
   cep: { type: String, required: false },
+  resetPasswordToken: { type: String, required: false },
+  resetPasswordExpires: { type: Date, required: false },
 });
 
 export const UsuarioModel =
