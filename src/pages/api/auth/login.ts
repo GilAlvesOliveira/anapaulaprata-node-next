@@ -4,7 +4,7 @@ import type { LoginRequisicao } from '../../../lib/types/LoginRequisicao.ts';
 import { UsuarioModel } from '../../../lib/models/UsuarioModel';
 import { conectarMongoDB } from '../../../lib/middlewares/conectarMongoDB';
 import md5 from 'md5';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nc from 'next-connect';
 import { politicaCORS } from '../../../lib/middlewares/politicaCORS';

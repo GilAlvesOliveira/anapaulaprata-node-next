@@ -3,7 +3,7 @@ import type { RespostaPadraoMsg } from '../../../lib/types/RespostaPadraoMsg';
 import type { CadastroRequisicao } from '../../../lib/types/CadastroRequisicao';
 import { UsuarioModel } from '../../../lib/models/UsuarioModel';
 import { conectarMongoDB } from '../../../lib/middlewares/conectarMongoDB';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { upload, uploadImagemCosmic } from '../../../lib/services/uploadImagemCosmic';
 import nc from 'next-connect';
 import { politicaCORS } from '../../../lib/middlewares/politicaCORS';

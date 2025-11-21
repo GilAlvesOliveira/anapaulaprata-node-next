@@ -3,7 +3,7 @@ import type { RespostaPadraoMsg } from '../../../lib/types/RespostaPadraoMsg';
 import { conectarMongoDB } from '../../../lib/middlewares/conectarMongoDB';
 import { politicaCORS } from '../../../lib/middlewares/politicaCORS';
 import { UsuarioModel } from '../../../lib/models/UsuarioModel';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import nc from 'next-connect';
 
 const handler = nc()
