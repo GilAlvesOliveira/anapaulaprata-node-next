@@ -5,6 +5,14 @@ import GoogleProvider from 'next-auth/providers/google';
 import { connectToDatabase } from '../../../lib/mongoose';
 import { UsuarioModel } from '../../../lib/models/UsuarioModel';
 
+// Garante que o NextAuth saiba qual é a URL base da API (backend)
+if (!process.env.NEXTAUTH_URL && process.env.APP_URL) {
+  process.env.NEXTAUTH_URL = process.env.APP_URL;
+}
+
+// URL do frontend para onde o usuário deve ser enviado depois de logar
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -18,6 +26,17 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
+    // 🔁 Depois de login / logout, para onde o usuário vai?
+    async redirect({ url, baseUrl }) {
+      // Se já estiver indo para o FRONTEND_URL, deixa passar
+      if (url.startsWith(FRONTEND_URL)) {
+        return url;
+      }
+
+      // Qualquer outra coisa (inclusive baseUrl do backend) → manda para o frontend
+      return FRONTEND_URL;
+    },
+
     async jwt({ token, account, profile }) {
       if (account && profile) {
         await connectToDatabase();
