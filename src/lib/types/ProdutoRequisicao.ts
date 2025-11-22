@@ -1,4 +1,5 @@
 export interface ProdutoRequisicao {
+  codigo?: string;
   nome?: string;
   descricao?: string;
   preco?: number;

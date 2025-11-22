@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IProduto extends Document {
-  _id: mongoose.Types.ObjectId; // Explicitamente definir _id como ObjectId
+  _id: mongoose.Types.ObjectId;
+  codigo: string;
   nome: string;
   descricao: string;
   preco: number;
@@ -10,14 +11,15 @@ export interface IProduto extends Document {
   categoria: string;
   cor: string;
   modelo: string;
-  peso: number;              // Novo campo peso
-  largura: number;           // Novo campo largura
-  altura: number;            // Novo campo altura
-  comprimento: number;       // Novo campo comprimento
-  frete?: number;            // Caso queira salvar o frete calculado aqui
+  peso: number;
+  largura: number;
+  altura: number;
+  comprimento: number;
+  frete?: number;
 }
 
 const ProdutoSchema = new Schema<IProduto>({
+  codigo: { type: String, required: true },
   nome: { type: String, required: true },
   descricao: { type: String, required: true },
   preco: { type: Number, required: true },
@@ -26,11 +28,12 @@ const ProdutoSchema = new Schema<IProduto>({
   categoria: { type: String, required: true },
   cor: { type: String, required: true },
   modelo: { type: String, required: true },
-  peso: { type: Number, required: true },  // Campo obrigatório
-  largura: { type: Number, required: true }, // Campo obrigatório
-  altura: { type: Number, required: true },  // Campo obrigatório
-  comprimento: { type: Number, required: true }, // Campo obrigatório
-  frete: { type: Number }, // Novo campo para armazenar o valor do frete (se desejado)
+  peso: { type: Number, required: true },
+  largura: { type: Number, required: true },
+  altura: { type: Number, required: true },
+  comprimento: { type: Number, required: true },
+  frete: { type: Number },
 });
 
-export const ProdutoModel = mongoose.models.Produto || mongoose.model<IProduto>('produtos', ProdutoSchema);
+export const ProdutoModel =
+  mongoose.models.Produto || mongoose.model<IProduto>('produtos', ProdutoSchema);

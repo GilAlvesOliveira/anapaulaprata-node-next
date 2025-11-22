@@ -30,6 +30,7 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
       if (typeof q === 'string' && q.trim().length > 0) {
         const term = q.trim();
         filtro.$or = [
+          { codigo:      { $regex: term, $options: 'i' } },
           { nome:        { $regex: term, $options: 'i' } },
           { modelo:      { $regex: term, $options: 'i' } },
           { categoria:   { $regex: term, $options: 'i' } },
@@ -47,7 +48,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
 
       const produtos = await Promise.race([
         ProdutoModel.find(filtro).sort({ nome: 1 }).limit(500),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout na busca de produtos')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout na busca de produtos')), 10000)
+        ),
       ]);
 
       return res.status(200).json(produtos);
@@ -63,7 +66,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
    */
   .use(async (req, res, next) => {
     // Encapsula o middleware autenticar para funcionar no next-connect
-    await autenticar((r: ProdutoApiRequest, s: NextApiResponse) => Promise.resolve(next()))(req, res);
+    await autenticar((r: ProdutoApiRequest, s: NextApiResponse) =>
+      Promise.resolve(next())
+    )(req, res);
   })
 
   .use(upload.single('file')) // Middleware para upload de imagem
@@ -77,12 +82,18 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
     try {
       // Verificar se o usuário é admin
       if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ erro: 'Acesso negado: somente administradores' });
+        return res
+          .status(403)
+          .json({ erro: 'Acesso negado: somente administradores' });
       }
 
       const produto = req.body as ProdutoRequisicao;
 
       // Validação dos campos
+      if (!produto.codigo || produto.codigo.length < 2) {
+        return res.status(400).json({ erro: 'Código inválido' });
+      }
+
       if (!produto.nome || produto.nome.length < 2) {
         return res.status(400).json({ erro: 'Nome inválido' });
       }
@@ -123,17 +134,22 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
       // Upload da imagem (opcional)
       const image = await Promise.race([
         uploadImagemCosmic(req),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout no upload da imagem')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout no upload da imagem')), 10000)
+        ),
       ]);
       if (req.file && !image) {
-        return res.status(400).json({ erro: 'Falha ao fazer upload da imagem' });
+        return res
+          .status(400)
+          .json({ erro: 'Falha ao fazer upload da imagem' });
       }
 
       const produtoASerSalvo = {
+        codigo: produto.codigo,
         nome: produto.nome,
         descricao: produto.descricao,
         preco: produto.preco,
-        estoque: produto.estoque, // pode ser 0
+        estoque: produto.estoque,
         imagem: image?.media?.url,
         categoria: produto.categoria,
         cor: produto.cor,
@@ -146,7 +162,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
 
       await Promise.race([
         ProdutoModel.create(produtoASerSalvo),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ao salvar produto')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout ao salvar produto')), 10000)
+        ),
       ]);
       return res.status(200).json({ msg: 'Produto criado com sucesso' });
     } catch (e) {
@@ -164,7 +182,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
     try {
       // Verificar se o usuário é admin
       if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ erro: 'Acesso negado: somente administradores' });
+        return res
+          .status(403)
+          .json({ erro: 'Acesso negado: somente administradores' });
       }
 
       const { _id } = req.query;
@@ -174,7 +194,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
 
       const produtoExistente = await Promise.race([
         ProdutoModel.findById(_id),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout na busca do produto')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout na busca do produto')), 10000)
+        ),
       ]);
 
       if (!produtoExistente) {
@@ -184,6 +206,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
       const produto = req.body as Partial<ProdutoRequisicao>;
 
       // Validação dos campos fornecidos
+      if (produto.codigo != null && produto.codigo.length < 2) {
+        return res.status(400).json({ erro: 'Código inválido' });
+      }
       if (produto.nome != null && produto.nome.length < 2) {
         return res.status(400).json({ erro: 'Nome inválido' });
       }
@@ -221,13 +246,18 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
       // Upload da imagem (opcional)
       const image = await Promise.race([
         uploadImagemCosmic(req),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout no upload da imagem')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout no upload da imagem')), 10000)
+        ),
       ]);
       if (req.file && !image) {
-        return res.status(400).json({ erro: 'Falha ao fazer upload da imagem' });
+        return res
+          .status(400)
+          .json({ erro: 'Falha ao fazer upload da imagem' });
       }
 
       const produtoASerAtualizado = {
+        codigo: produto.codigo ?? produtoExistente.codigo,
         nome: produto.nome ?? produtoExistente.nome,
         descricao: produto.descricao ?? produtoExistente.descricao,
         preco: produto.preco ?? produtoExistente.preco,       // aceita 0 usando ??
@@ -244,7 +274,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
 
       await Promise.race([
         ProdutoModel.updateOne({ _id }, produtoASerAtualizado),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ao atualizar produto')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout ao atualizar produto')), 10000)
+        ),
       ]);
 
       return res.status(200).json({ msg: 'Produto atualizado com sucesso' });
@@ -262,7 +294,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
     try {
       // Verificar se o usuário é admin
       if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ erro: 'Acesso negado: somente administradores' });
+        return res
+          .status(403)
+          .json({ erro: 'Acesso negado: somente administradores' });
       }
 
       const { _id } = req.query;
@@ -272,7 +306,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
 
       const produto = await Promise.race([
         ProdutoModel.findById(_id),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout na busca do produto')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout na busca do produto')), 10000)
+        ),
       ]);
 
       if (!produto) {
@@ -281,7 +317,9 @@ const handler = nc<ProdutoApiRequest, NextApiResponse<RespostaPadraoMsg | any>>(
 
       await Promise.race([
         ProdutoModel.deleteOne({ _id }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ao excluir produto')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout ao excluir produto')), 10000)
+        ),
       ]);
 
       return res.status(200).json({ msg: 'Produto excluído com sucesso' });
