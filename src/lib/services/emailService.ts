@@ -1,3 +1,4 @@
+// src/middleweres/services/emailService.ts
 import nodemailer from 'nodemailer';
 
 const {
@@ -7,11 +8,12 @@ const {
   SMTP_PASS,
   SMTP_FROM,
   APP_URL,
+  FRONTEND_URL,
 } = process.env;
 
-if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM || !APP_URL) {
+if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
   console.warn(
-    '⚠ Variáveis de ambiente de email não estão completamente configuradas. ' +
+    '⚠ Variáveis de ambiente de email (SMTP) não estão completamente configuradas. ' +
       'Funcionalidade de reset de senha pode não funcionar corretamente.'
   );
 }
@@ -27,11 +29,18 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  if (!APP_URL) {
-    throw new Error('APP_URL não configurado nas variáveis de ambiente.');
+  // Base do link: de preferência o FRONTEND_URL; se não tiver, cai pro APP_URL
+  const baseUrl = FRONTEND_URL || APP_URL;
+
+  if (!baseUrl) {
+    throw new Error(
+      'FRONTEND_URL ou APP_URL não configurados nas variáveis de ambiente.'
+    );
   }
 
-  const resetLink = `${APP_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+  const resetLink = `${baseUrl}/reset-password?token=${token}&email=${encodeURIComponent(
+    email
+  )}`;
 
   const mailOptions = {
     from: SMTP_FROM,
